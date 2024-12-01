@@ -22,12 +22,9 @@ Resources:
           - Sid: AllowCloudFrontAccess
             Effect: Allow
             Principal:
-              Service: cloudfront.amazonaws.com
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
             Action: "s3:GetObject"
             Resource: !Sub "arn:aws:s3:::${StaticWebsiteBucket}/*"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${WebsiteDistribution}"
 
   WebsiteDistribution:
     Type: AWS::CloudFront::Distribution
@@ -38,7 +35,7 @@ Resources:
           - Id: S3Origin
             DomainName: !GetAtt StaticWebsiteBucket.RegionalDomainName
             S3OriginConfig:
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${AWS::StackName}"
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOAI}"
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
@@ -48,6 +45,12 @@ Resources:
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
         DefaultRootObject: index.html
+
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: Access Identity for CloudFront to S3
 
 Outputs:
   WebsiteURL:
